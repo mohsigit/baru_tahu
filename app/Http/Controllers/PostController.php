@@ -17,6 +17,16 @@ class PostController extends Controller
     }
     public function destroy(Post $post){
         $post->delete();
-        return redirect()->route('crud')->with('success','Telah di hapus dari kenyataan');
+        return redirect()->route('posts.index')->with('success', 'Telah dihapus dari kenyataan');
+    }
+    //Untuk Tambah
+    public function store(Request $request){
+        $request->validate([
+            'title' => 'required|string|max:255',
+        ]);
+        Post::create([
+            'title' => $request->title,
+        ]);
+        return redirect()->route('posts.index')->with('success', 'Post created successfully!');
     }
 }

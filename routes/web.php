@@ -24,7 +24,13 @@ Route::get('/crud', [PostController::class, 'index'])
     ->middleware(['auth', 'verified'])
     ->name('crud');
 
-Route::delete('/posts/{post}', [PostController::class, 'destroy'])->middleware(['auth', 'verified']);
+//Route::delete('/post/{post}', [PostController::class, 'destroy'])->middleware(['auth', 'verified']);
+
+Route::middleware(['auth'])->group(function(){
+    Route::delete('/post/{post}', [PostController::class, 'destroy'])->name('post.destroy');
+    Route::post('/post', [PostController::class, 'store'])->name('post.store');
+    Route::get('/posts', [PostController::class, 'index'])->name('posts.index');
+});
 
 //Auth Route
 Route::middleware('auth')->group(function () {
