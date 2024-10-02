@@ -30,6 +30,7 @@ Route::middleware(['auth'])->group(function(){
     Route::delete('/post/{post}', [PostController::class, 'destroy'])->name('post.destroy');
     Route::post('/post', [PostController::class, 'store'])->name('post.store');
     Route::get('/posts', [PostController::class, 'index'])->name('posts.index');
+    Route::put('/post/{id}', [PostController::class, 'update'])->name('post.update');
 });
 
 //Auth Route

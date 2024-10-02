@@ -29,4 +29,15 @@ class PostController extends Controller
         ]);
         return redirect()->route('posts.index')->with('success', 'Post created successfully!');
     }
+    public function update(Request $request, $id){ // $request jadi parameter fungsi dan $id  parameter yang di tarik dari route
+        $request->validate([
+            'title' => 'required|string|max:255', //buat validasi biar tittlenya gk lebih dari 255 char
+        ]);
+        $post = Post::findOrFail($id); //buat nagkep get $id nya klo gk ada jadi error
+
+        $post->title = $request->input('title'); // buat nyimpen ke database setelah di rubah
+        $post->save();
+
+        return redirect()->back()->with('success', 'Post updated successfully!'); // gak tau kenapa tapi gk pernah muncul
+    }
 }

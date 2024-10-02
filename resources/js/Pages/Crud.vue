@@ -4,58 +4,75 @@ import { Head } from '@inertiajs/vue3';
 import { ref } from 'vue';
 import { Inertia } from '@inertiajs/inertia';
 
-// Props yang diterima dari controller
+// Buat Narik data dari controller
 const props = defineProps({
     posts: Array
 });
 
-// State untuk modal
+// Untuk Modal
 const showModal = ref(false);
 const showDeleteModal = ref(false);
-const newPostTitle = ref(''); // Title for new post
-const postToDelete = ref(null); // ID post yang mau dihapus
+const newPostTitle = ref(''); // ambil tittle buat edit atau tambah
+const postToDelete = ref(null); // Ngambil Id buat yang mau di delet
+const editingPost = ref(null); // bua post yang lalgi di edit
 
-// Function untuk menangani visibilitas modal
+// Biar modal nya nongol
 const openModal = () => {
     showModal.value = true;
+    newPostTitle.value = '';
+    editingPost.value = null;
 };
 
+// Kalo gak jadi edit (Pencet tombol cancel nnti batal edit)
 const closeModal = () => {
     showModal.value = false;
-    newPostTitle.value = ''; // Clear the input when modal is closed
+    newPostTitle.value = '';
+    editingPost.value = null;
 };
 
-// Function untuk menangani penambahan post baru
-const addPost = () => {
+// If Else klo mau edit atau tambah
+const savePost = () => {
     if (newPostTitle.value) {
-        Inertia.post('/post', { title: newPostTitle.value }); // Kirim permintaan POST ke server
+        if (editingPost.value) {
+            // Update
+            Inertia.put(`/post/${editingPost.value.id}`, { title: newPostTitle.value }); //kalo update yang di ambil id, dan title tapi yang di lempar ke route cuman id nya aja
+        } else {
+            // Tambah
+            Inertia.post('/post', { title: newPostTitle.value });
+        }
         closeModal();
     } else {
         alert('Title is required');
     }
 };
 
-// Function untuk menangani konfirmasi penghapusan post
+// Function Edit
+const editPost = (post) => {
+    newPostTitle.value = post.title; // Buat Ambil Judul Yang mau di edit
+    editingPost.value = post;
+    showModal.value = true;
+};
+
+// Function Confirm Hapus
 const confirmDeletePost = (id) => {
-    postToDelete.value = id; // Simpan ID post yang akan dihapus
-    showDeleteModal.value = true; // Tampilkan modal konfirmasi
+    postToDelete.value = id;
+    showDeleteModal.value = true;
 };
 
 // Function untuk menghapus post
 const deletePost = () => {
     if (postToDelete.value) {
-        Inertia.delete(`/post/${postToDelete.value}`); // Kirim permintaan DELETE ke server
-        closeDeleteModal(); // Tutup modal konfirmasi setelah menghapus
+        Inertia.delete(`/post/${postToDelete.value}`); // Dipake buat routenya
+        closeDeleteModal();
     }
 };
 
-// Function untuk menutup modal konfirmasi
+// Tutup Modal
 const closeDeleteModal = () => {
     showDeleteModal.value = false;
-    postToDelete.value = null; // Reset ID post yang akan dihapus
+    postToDelete.value = null;
 };
 </script>
-
 <template>
     <Head title="CRUD Page" />
 
@@ -82,7 +99,7 @@ const closeDeleteModal = () => {
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                             <button @click="confirmDeletePost(post.id)" class="bg-red-500 text-white px-4 py-2 rounded">Delete</button>
                                             &nbsp;
-                                            <button @click="editPost(post.id)" class="bg-green-500 text-white px-4 py-2 rounded">Edit</button>
+                                            <button @click="editPost(post)" class="bg-green-500 text-white px-4 py-2 rounded">Edit</button>
                                         </td>
                                     </tr>
                                 </tbody>
@@ -93,7 +110,7 @@ const closeDeleteModal = () => {
             </div>
         </div>
 
-        <!-- Modal Dialog untuk Tambah Post -->
+        <!-- Modal Dialog buat Tambah/Edit Post -->
         <div v-if="showModal" class="fixed z-10 inset-0 overflow-y-auto">
             <div class="flex items-center justify-center min-h-screen px-4 text-center">
                 <div class="fixed inset-0 transition-opacity" aria-hidden="true">
@@ -109,7 +126,7 @@ const closeDeleteModal = () => {
                                 </svg>
                             </div>
                             <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
-                                <h3 class="text-lg leading-6 font-medium text-gray-900">Add New Post</h3>
+                                <h3 class="text-lg leading-6 font-medium text-gray-900">{{ editingPost ? 'Edit Post' : 'Add New Post' }}</h3>
                                 <div class="mt-2">
                                     <input v-model="newPostTitle" type="text" placeholder="Enter post title" class="border border-gray-300 p-2 w-full rounded-md" />
                                 </div>
@@ -117,7 +134,7 @@ const closeDeleteModal = () => {
                         </div>
                     </div>
                     <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
-                        <button @click="addPost" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 sm:ml-3 sm:w-auto sm:text-sm">
+                        <button @click="savePost" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 sm:ml-3 sm:w-auto sm:text-sm">
                             Save
                         </button>
                         <button @click="closeModal" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 sm:mt-0 sm:w-auto sm:text-sm">
@@ -127,8 +144,6 @@ const closeDeleteModal = () => {
                 </div>
             </div>
         </div>
-        <!-- End of Modal Tambah Post -->
-
         <!-- Modal Dialog untuk Konfirmasi Hapus -->
         <div v-if="showDeleteModal" class="fixed z-10 inset-0 overflow-y-auto">
             <div class="flex items-center justify-center min-h-screen px-4 text-center">
@@ -163,10 +178,5 @@ const closeDeleteModal = () => {
                 </div>
             </div>
         </div>
-        <!-- End of Modal Konfirmasi Hapus -->
     </AuthenticatedLayout>
 </template>
-
-<style scoped>
-/* Optional styles to enhance the appearance of the list */
-</style>
