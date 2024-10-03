@@ -4,12 +4,9 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Schema\Blueprint;
-use Schema;
 
-class Post extends Model
+class Inventory extends Model
 {
     use HasFactory;
-    
-    protected $fillable = ['title','description'];
+    protected $fillable = ['name','qty','balance','remarks','color','size','description'];
 }

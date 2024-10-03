@@ -5,6 +5,7 @@ use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use App\Http\Controllers\PostController;
+use App\Http\Controllers\InventoryController;
 
 Route::get('/', function () {
     return Inertia::render('Welcome', [
@@ -19,19 +20,20 @@ Route::get('/', function () {
 Route::get('/dashboard', function () {
     return Inertia::render('Dashboard');
 })->middleware(['auth', 'verified'])->name('dashboard');
+
+/*coba inventory
+Route::get('/inventory', function () {
+    return Inertia::render('Inventory');
+})->middleware(['auth', 'verified'])->name('inventory');
+*/
 //Crud Route
 Route::get('/crud', [PostController::class, 'index'])
     ->middleware(['auth', 'verified'])
     ->name('crud');
 
-//Route::delete('/post/{post}', [PostController::class, 'destroy'])->middleware(['auth', 'verified']);
-
-Route::middleware(['auth'])->group(function(){
-    Route::delete('/post/{post}', [PostController::class, 'destroy'])->name('post.destroy');
-    Route::post('/post', [PostController::class, 'store'])->name('post.store');
-    Route::get('/posts', [PostController::class, 'index'])->name('posts.index');
-    Route::put('/post/{id}', [PostController::class, 'update'])->name('post.update');
-});
+Route::get('/inventory', [InventoryController::class, 'index'])
+    ->middleware(['auth', 'verified'])
+    ->name('inventory');
 
 //Auth Route
 Route::middleware('auth')->group(function () {
@@ -40,4 +42,33 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
+/*Route::prefix('api')->middleware(['auth'])->group(function () {
+    Route::prefix('post')->group(function () {
+        Route::get('/page', [PostController::class, 'getTable']);
+        Route::delete('/destroy/{id}', [PostController::class, 'destroy']);
+        Route::post('/store', [PostController::class, 'store']);
+    });
+});
+//Route inventory
+Route::prefix('api')->middleware(['auth'])->group(function () {
+    Route::prefix('inventory')->group(function () {
+        Route::get('/page', [InventoryController::class, 'getTable']);
+        Route::delete('/destroy/{name}', [InventoryController::class, 'destroy']);
+        Route::post('/store', [InventoryController::class, 'store']);
+    });
+});
+*/
+//new route
+Route::middleware(['auth'])->prefix('api')->group(function(){
+    Route::prefix('post')->group(function () {
+        Route::get('/page', [PostController::class, 'getTable']);
+        Route::delete('/destroy/{id}', [PostController::class, 'destroy']);
+        Route::post('/store', [PostController::class, 'store']);
+    });
+    Route::prefix('inventory')->group(function () {
+        Route::get('/page', [InventoryController::class, 'getTable']);
+        Route::delete('/destroy/{name}', [InventoryController::class, 'destroy']);
+        Route::post('/store', [InventoryController::class, 'store']);
+    });
+});
 require __DIR__.'/auth.php';

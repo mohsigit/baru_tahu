@@ -45,6 +45,12 @@ const showingNavigationDropdown = ref(false);
                                 >
                                     Crud
                                 </NavLink>
+                                <NavLink
+                                    :href="route('inventory')"
+                                    :active="route().current('inventory')"
+                                >
+                                    Inventory
+                                </NavLink>
                             </div>
                         </div>
 

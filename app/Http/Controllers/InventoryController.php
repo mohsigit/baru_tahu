@@ -4,17 +4,17 @@ namespace App\Http\Controllers;
 
 use Inertia\Inertia;
 use Illuminate\Http\Request;
-use App\Models\Post;
+use App\Models\Inventory;
 use Illuminate\Http\JsonResponse;
 
 
-class PostController extends Controller
+class InventoryController extends Controller
 {
     public function index()
     {
-        $posts = Post::all();
-        return Inertia::render('Crud', [
-            'posts' => $posts
+        $inv = Inventory::all();
+        return Inertia::render('Inventory', [
+            'inventory' => $inv
         ]);
     }
     public function getTable(Request $request): JsonResponse {
@@ -25,13 +25,13 @@ class PostController extends Controller
             $field = $request->get('field') ?? 'created_at';
             $type = $request->get('type') ?? 'desc';
             $search_item = $request->get('type') ?? '';
-            $posts = Post::where('title', 'like', '%' . $search_item. '%');
-            $posts = $posts->orderBy($field, $type);
+            $inv = Inventory::where('name', 'like', '%' . $search_item. '%');
+            $inv = $inv->orderBy($field, $type);
             return response()->json([
                 'status' => true,
                 'statusCode' => 200,
                 'message' => 'success',
-                'data' => $posts->paginate($perPage, ['*'], '', $page),
+                'data' => $inv->paginate($perPage, ['*'], '', $page),
             ]);
         } catch (\Exception $e) {
             return response()->json([
@@ -46,8 +46,8 @@ class PostController extends Controller
 
     public function destroy($id): JsonResponse {
         try{
-            $post = Post::findOrFail($id);
-            $post->delete();
+            $inv = Inventory::findOrFail($id);
+            $inv->delete();
             return response()->json([
                 'status' => true,
                 'statusCode' => 200,
@@ -70,9 +70,9 @@ class PostController extends Controller
                 'title' => 'required|string|max:255',
                 'description' => 'required|string',
             ]);
-            $check = Post::query()->where('id', $request->get('id'));
-            $data = $request->get('id') !== null ? $check->first() : new Post();
-            $data->setAttribute('title', $request->get('title'));
+            $check = Inventory::query()->where('name', $request->get('id'));
+            $data = $request->get('name') !== null ? $check->first() : new Post();
+            $data->setAttribute('name', $request->get('name'));
             $data->setAttribute('description',$request->get('description'));
             $data->save();
             return response()->json([

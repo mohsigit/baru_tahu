@@ -1,77 +1,166 @@
 <script setup>
-import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-import { Head } from '@inertiajs/vue3';
-import { ref } from 'vue';
-import { Inertia } from '@inertiajs/inertia';
+import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
+import { Head } from "@inertiajs/vue3";
+import { ref, watchEffect } from "vue";
+import { Inertia } from "@inertiajs/inertia";
+import Modal from "@/Components/Modal.vue";
+import postService from "@/Services/post.service";
+import AlertComponent from "@/Components/Alert.vue";
+import AkuTable from "@/Components/AkuTable.vue";
 
 // Buat Narik data dari controller
 const props = defineProps({
-    posts: Array
+    posts: Array,
 });
 
 // Untuk Modal
 const showModal = ref(false);
 const showDeleteModal = ref(false);
-const newPostTitle = ref(''); // ambil tittle buat edit atau tambah
-const postToDelete = ref(null); // Ngambil Id buat yang mau di delet
-const editingPost = ref(null); // bua post yang lalgi di edit
+const form = ref({
+    id: null,
+    title: "",
+    description:"",
+}); // untuk form modal
+
+const alertModel = ref({
+    show: false,
+    title: "",
+    message: "",
+    alertType: "",
+});
+const columns = [
+    { field: "title", label: "Name", sortable: true },
+    { field: "description", label: "Deskripsi", sortable: true },
+    {
+        field: "created_at",
+        width: "250px",
+        label: "Created At",
+        sortable: true,
+    },
+    { field: "action", width: "250px", label: "Action", sortable: false },
+]; // untuk kolom table
+const AkuTableRef = ref(null); // ambil tittle buat edit atau tambah
+
+// reset model
+const resetModel = () => {
+    form.value.id = null;
+    form.value.title = "";
+};
 
 // Biar modal nya nongol
 const openModal = () => {
+    resetModel();
     showModal.value = true;
-    newPostTitle.value = '';
-    editingPost.value = null;
 };
 
 // Kalo gak jadi edit (Pencet tombol cancel nnti batal edit)
 const closeModal = () => {
+    resetModel();
     showModal.value = false;
-    newPostTitle.value = '';
-    editingPost.value = null;
 };
 
 // If Else klo mau edit atau tambah
-const savePost = () => {
-    if (newPostTitle.value) {
-        if (editingPost.value) {
-            // Update
-            Inertia.put(`/post/${editingPost.value.id}`, { title: newPostTitle.value }); //kalo update yang di ambil id, dan title tapi yang di lempar ke route cuman id nya aja
+const savePost = async () => {
+    try {
+        const response = await postService.store(form.value);
+        if (response.status) {
+            alertModel.value.show = true;
+            alertModel.value.title = "Success";
+            alertModel.value.message = response.message;
+            alertModel.value.alertType = "success";
+            loadItems();
+            closeModal();
         } else {
-            // Tambah
-            Inertia.post('/post', { title: newPostTitle.value });
+            alertModel.value.show = true;
+            alertModel.value.title = "Error";
+            alertModel.value.message = response.message;
+            alertModel.value.alertType = "error";
         }
-        closeModal();
-    } else {
-        alert('Title is required');
+    } catch (error) {
+        alertModel.value.show = true;
+        alertModel.value.title = "Error";
+        alertModel.value.message = error.message;
+        alertModel.value.alertType = "error";
     }
 };
 
 // Function Edit
 const editPost = (post) => {
-    newPostTitle.value = post.title; // Buat Ambil Judul Yang mau di edit
-    editingPost.value = post;
+    form.value.id = post.id;
+    form.value.title = post.title;
+    form.value.description = post.description;
     showModal.value = true;
 };
 
 // Function Confirm Hapus
 const confirmDeletePost = (id) => {
-    postToDelete.value = id;
+    form.value.id = id;
     showDeleteModal.value = true;
 };
 
 // Function untuk menghapus post
-const deletePost = () => {
-    if (postToDelete.value) {
-        Inertia.delete(`/post/${postToDelete.value}`); // Dipake buat routenya
-        closeDeleteModal();
+const deletePost = async () => {
+    try {
+        const response = await postService.destroy(form.value.id);
+        if (response.status) {
+            alertModel.value.show = true;
+            alertModel.value.title = "Success";
+            alertModel.value.message = response.message;
+            alertModel.value.alertType = "success";
+            loadItems();
+            closeDeleteModal();
+        } else {
+            alertModel.value.show = true;
+            alertModel.value.title = "Error";
+            alertModel.value.message = response.message;
+            alertModel.value.alertType = "error";
+        }
+    } catch (error) {
+        alertModel.value.show = true;
+        alertModel.value.title = "Error";
+        alertModel.value.message = error.message;
+        alertModel.value.alertType = "error";
     }
 };
 
 // Tutup Modal
 const closeDeleteModal = () => {
     showDeleteModal.value = false;
-    postToDelete.value = null;
 };
+
+// Load Items AkuTable
+const loadItems = async () => {
+    await AkuTableRef.value["loadItems"]();
+};
+// format date dari timestamp
+function formatDate(timestamp) {
+    const date = new Date(timestamp);
+
+    // Format the date and time using toLocaleString
+    const formattedDate = date.toLocaleString("en-US", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+        hour: "numeric",
+        minute: "numeric",
+        second: "numeric",
+        hour12: false, // Use 12-hour format, set to false for 24-hour format
+    });
+
+    return formattedDate;
+}
+
+// Watch Effect
+watchEffect(() => {
+    if (alertModel.value.show) {
+        setTimeout(() => {
+            alertModel.value.show = false;
+            alertModel.value.title = "";
+            alertModel.value.message = "";
+            alertModel.value.alertType = "";
+        }, 5000);
+    }
+});
 </script>
 <template>
     <Head title="CRUD Page" />
@@ -79,104 +168,141 @@ const closeDeleteModal = () => {
     <AuthenticatedLayout>
         <div class="py-12">
             <div class="mx-auto max-w-7xl sm:px-6 lg:px-8">
-                <div class="overflow-hidden bg-white shadow-sm sm:rounded-lg">
+                <div
+                    class="overflow-hidden bg-white shadow-sm sm:rounded-lg shadow-lg"
+                >
                     <div class="p-6 text-gray-900">
                         <h2 class="text-xl font-semibold">Data Posts</h2>
-                        <ul>
-                            <button @click="openModal" class="bg-blue-500 text-white px-4 py-2 rounded">Add</button>
-                            <table class="min-w-full divide-y divide-gray-200 mt-4">
-                                <thead class="bg-gray-50">
-                                    <tr>
-                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
-                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
-                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="bg-white divide-y divide-gray-200">
-                                    <tr v-for="post in props.posts" :key="post.id">
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ post.id }}</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ post.title }}</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                            <button @click="confirmDeletePost(post.id)" class="bg-red-500 text-white px-4 py-2 rounded">Delete</button>
-                                            &nbsp;
-                                            <button @click="editPost(post)" class="bg-green-500 text-white px-4 py-2 rounded">Edit</button>
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Modal Dialog buat Tambah/Edit Post -->
-        <div v-if="showModal" class="fixed z-10 inset-0 overflow-y-auto">
-            <div class="flex items-center justify-center min-h-screen px-4 text-center">
-                <div class="fixed inset-0 transition-opacity" aria-hidden="true">
-                    <div class="absolute inset-0 bg-gray-500 opacity-75"></div>
-                </div>
-
-                <div class="bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:max-w-lg sm:w-full">
-                    <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-                        <div class="sm:flex sm:items-start">
-                            <div class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-blue-100 sm:mx-0 sm:h-10 sm:w-10">
-                                <svg class="h-6 w-6 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-                                </svg>
-                            </div>
-                            <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
-                                <h3 class="text-lg leading-6 font-medium text-gray-900">{{ editingPost ? 'Edit Post' : 'Add New Post' }}</h3>
-                                <div class="mt-2">
-                                    <input v-model="newPostTitle" type="text" placeholder="Enter post title" class="border border-gray-300 p-2 w-full rounded-md" />
-                                </div>
-                            </div>
+                        <div
+                            class="md:px-3 md:py-4 flex flex-col md:flex-row gap-1.5 md:gap-1 md:justify-end"
+                        >
+                            <button
+                                @click="openModal"
+                                class="bg-blue-500 text-white px-4 py-2 rounded-xl"
+                            >
+                                Add
+                            </button>
                         </div>
-                    </div>
-                    <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
-                        <button @click="savePost" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 sm:ml-3 sm:w-auto sm:text-sm">
-                            Save
-                        </button>
-                        <button @click="closeModal" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 sm:mt-0 sm:w-auto sm:text-sm">
-                            Cancel
-                        </button>
+                        <AkuTable
+                            :columns="columns"
+                            ref="AkuTableRef"
+                            :urls="'post/page'"
+                        >
+                            <template #table-row="props">
+                                <span
+                                    v-if="
+                                        props['column'].field === 'created_at'
+                                    "
+                                >
+                                    {{ formatDate(props["row"]["created_at"]) }}
+                                </span>
+                                <div v-if="props['column'].field === 'action'">
+                                    <div class="flex gap-2">
+                                        <button
+                                            class="btn btn-warning btn-sm"
+                                            @click="editPost(props['row'])"
+                                        >
+                                            edit
+                                        </button>
+                                        <button
+                                            class="btn btn-error btn-sm"
+                                            @click="
+                                                confirmDeletePost(
+                                                    props['row'].id
+                                                )
+                                            "
+                                        >
+                                            delete
+                                        </button>
+                                    </div>
+                                </div>
+                            </template>
+                        </AkuTable>
                     </div>
                 </div>
             </div>
         </div>
+
+        <Modal :show="showModal" @close="closeModal">
+            <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex">
+                <h3 class="text-lg leading-6 font-medium text-gray-900">
+                    {{ form.id ? "Edit Post" : "Add New Post" }}
+                </h3>
+            </div>
+            <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                <div class="mt-3 text-center sm:mt-0 sm:text-left">
+                    <div class="mt-2">
+                        <input
+                            v-model="form.title"
+                            type="text"
+                            placeholder="Enter post title"
+                            class="border border-gray-300 p-2 w-full rounded-md"
+                        />
+                    </div>
+                    <div class="mt-2">
+                        <input
+                            v-model="form.description"
+                            type="text"
+                            placeholder="Enter post Description"
+                            class="border border-gray-300 p-2 w-full rounded-md"
+                        />
+                    </div>
+                </div>
+            </div>
+            <div
+                class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse"
+            >
+                <button
+                    @click="savePost"
+                    class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 sm:ml-3 sm:w-auto sm:text-sm"
+                >
+                    Save
+                </button>
+                <button
+                    @click="closeModal"
+                    class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 sm:mt-0 sm:w-auto sm:text-sm"
+                >
+                    Cancel
+                </button>
+            </div>
+        </Modal>
         <!-- Modal Dialog untuk Konfirmasi Hapus -->
-        <div v-if="showDeleteModal" class="fixed z-10 inset-0 overflow-y-auto">
-            <div class="flex items-center justify-center min-h-screen px-4 text-center">
-                <div class="fixed inset-0 transition-opacity" aria-hidden="true">
-                    <div class="absolute inset-0 bg-gray-500 opacity-75"></div>
-                </div>
-
-                <div class="bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:max-w-lg sm:w-full">
-                    <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-                        <div class="sm:flex sm:items-start">
-                            <div class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
-                                <svg class="h-6 w-6 text-red-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12H9m6 0H9m6 0H9m0 0V9m0 0v3m0 0v3m0 0V9m0 0v3m0 0v3" />
-                                </svg>
-                            </div>
-                            <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
-                                <h3 class="text-lg leading-6 font-medium text-gray-900">Confirm Delete</h3>
-                                <div class="mt-2">
-                                    <p>Are you sure you want to delete this post?</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
-                        <button @click="deletePost" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 sm:ml-3 sm:w-auto sm:text-sm">
-                            Delete
-                        </button>
-                        <button @click="closeDeleteModal" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 sm:mt-0 sm:w-auto sm:text-sm">
-                            Cancel
-                        </button>
+        <Modal :show="showDeleteModal" @close="closeDeleteModal">
+            <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex">
+                <h3 class="text-lg leading-6 font-medium text-gray-900">
+                    Confirm Delete
+                </h3>
+            </div>
+            <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                <div class="mt-1 text-center sm:mt-0 sm:text-left">
+                    <div class="mt-2">
+                        <p>Are you sure you want to delete this post?</p>
                     </div>
                 </div>
             </div>
-        </div>
+            <div
+                class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse"
+            >
+                <button
+                    @click="deletePost"
+                    class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 sm:ml-3 sm:w-auto sm:text-sm"
+                >
+                    Delete
+                </button>
+                <button
+                    @click="closeDeleteModal"
+                    class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 sm:mt-0 sm:w-auto sm:text-sm"
+                >
+                    Cancel
+                </button>
+            </div>
+        </Modal>
+
+        <AlertComponent
+            v-model:show="alertModel.show"
+            :title="alertModel.title"
+            :message="alertModel.message"
+            :alertType="alertModel.alertType"
+        />
     </AuthenticatedLayout>
 </template>
