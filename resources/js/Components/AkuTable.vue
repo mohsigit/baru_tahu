@@ -20,6 +20,10 @@ const props = defineProps({
         type: String,
         default: "desc",
     },
+    selectOptions: {
+        type: Boolean,
+        default: false
+    }
 });
 const isLoading = ref(false);
 const totalRecords = ref(0);
@@ -44,9 +48,15 @@ const loadItems = async () => {
             Accept: "application/json",
         },
     });
-    rows.value = response.data.data.data;
-    totalRecords.value = response.data.total;
-    isLoading.value = false;
+    if(response.status){
+        rows.value = response.data.data.data;
+        totalRecords.value = response.data.total;
+        isLoading.value = false;
+    }else{
+        rows.value = []
+        totalRecords.value = 0
+        isLoading.value = false;
+    }
 };
 
 const onPageChange = (params) => {
@@ -77,11 +87,15 @@ defineExpose({ loadItems });
 <template>
     <div class="z-10">
         <vue-good-table
+            ref="dataTableRemote"
             mode="remote"
             :totalRows="totalRecords"
             v-model:isloading="isLoading"
             :columns="columns"
             :line-numbers="true"
+            :select-options="{
+                enabled: selectOptions
+            }"
             :search-options="{
                 enabled: true,
                 placeholder: 'Search this table, and press enter',
@@ -92,7 +106,7 @@ defineExpose({ loadItems });
                 mode: 'records',
                 perPage: perPage,
                 setCurrentPage: page,
-                perPageDropdown: [2, 10, 20, 30, 40, 50],
+                perPageDropdown: [10, 20, 30, 40, 50],
             }"
             :sortable="true"
             :sort-options="{
@@ -105,6 +119,7 @@ defineExpose({ loadItems });
             @search="onSearch"
             @load="loadItems"
             :rows="rows"
+            theme="polar-bear"
         >
             <template #table-row="props">
                 <slot name="table-row" v-bind="props"></slot>

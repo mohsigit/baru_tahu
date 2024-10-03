@@ -1,12 +1,15 @@
 <script setup>
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
-import { Head } from "@inertiajs/vue3";
-import { ref, watchEffect } from "vue";
-import { Inertia } from "@inertiajs/inertia";
+import {Head} from "@inertiajs/vue3";
+import {ref, watchEffect} from "vue";
+import {Inertia} from "@inertiajs/inertia";
 import Modal from "@/Components/Modal.vue";
 import postService from "@/Services/post.service";
 import AlertComponent from "@/Components/Alert.vue";
 import AkuTable from "@/Components/AkuTable.vue";
+import PrimaryButton
+    from "../../../vendor/laravel/breeze/stubs/inertia-vue-ts/resources/js/Components/PrimaryButton.vue";
+import DangerButton from "../../../vendor/laravel/breeze/stubs/inertia-vue-ts/resources/js/Components/DangerButton.vue";
 
 // Buat Narik data dari controller
 const props = defineProps({
@@ -19,7 +22,7 @@ const showDeleteModal = ref(false);
 const form = ref({
     id: null,
     title: "",
-    description:"",
+    description: "",
 }); // untuk form modal
 
 const alertModel = ref({
@@ -29,22 +32,24 @@ const alertModel = ref({
     alertType: "",
 });
 const columns = [
-    { field: "title", label: "Name", sortable: true },
-    { field: "description", label: "Deskripsi", sortable: true },
+    {field: "title", label: "Name", sortable: true},
+    {field: "description", label: "Deskripsi", sortable: true},
     {
         field: "created_at",
         width: "250px",
         label: "Created At",
         sortable: true,
     },
-    { field: "action", width: "250px", label: "Action", sortable: false },
+    {field: "action", width: "250px", label: "Action", sortable: false},
 ]; // untuk kolom table
 const AkuTableRef = ref(null); // ambil tittle buat edit atau tambah
+const arrDelete = ref([])
 
 // reset model
 const resetModel = () => {
     form.value.id = null;
     form.value.title = "";
+    form.value.description = "";
 };
 
 // Biar modal nya nongol
@@ -68,7 +73,7 @@ const savePost = async () => {
             alertModel.value.title = "Success";
             alertModel.value.message = response.message;
             alertModel.value.alertType = "success";
-            loadItems();
+            await loadItems();
             closeModal();
         } else {
             alertModel.value.show = true;
@@ -93,27 +98,43 @@ const editPost = (post) => {
 };
 
 // Function Confirm Hapus
-const confirmDeletePost = (id) => {
-    form.value.id = id;
+const confirmDeletePost = () => {
+    const getRows = AkuTableRef['value'].$refs.dataTableRemote.selectedRows
+    if (getRows.length === 0) {
+        alertModel.value.show = true
+        alertModel.value.title = "Error";
+        alertModel.value.message = 'Please select at least one item';
+        alertModel.value.alertType = "error";
+        return;
+    }
     showDeleteModal.value = true;
+    arrDelete.value = getRows
 };
 
 // Function untuk menghapus post
 const deletePost = async () => {
     try {
-        const response = await postService.destroy(form.value.id);
-        if (response.status) {
-            alertModel.value.show = true;
-            alertModel.value.title = "Success";
-            alertModel.value.message = response.message;
-            alertModel.value.alertType = "success";
-            loadItems();
+        let loopEnd = false
+        for (let i = 0; i < arrDelete.value.length; i++) {
+            const response = await postService.destroy(arrDelete.value[i]['id']);
+            if (response.status) {
+                alertModel.value.show = true;
+                alertModel.value.title = "Success";
+                alertModel.value.message = response.message;
+                alertModel.value.alertType = "success";
+            } else {
+                alertModel.value.show = true;
+                alertModel.value.title = "Error";
+                alertModel.value.message = response.message;
+                alertModel.value.alertType = "error";
+            }
+            if(i+1 === arrDelete.value.length){
+                loopEnd = true
+            }
+        }
+        if(loopEnd){
+            await loadItems();
             closeDeleteModal();
-        } else {
-            alertModel.value.show = true;
-            alertModel.value.title = "Error";
-            alertModel.value.message = response.message;
-            alertModel.value.alertType = "error";
         }
     } catch (error) {
         alertModel.value.show = true;
@@ -132,6 +153,7 @@ const closeDeleteModal = () => {
 const loadItems = async () => {
     await AkuTableRef.value["loadItems"]();
 };
+
 // format date dari timestamp
 function formatDate(timestamp) {
     const date = new Date(timestamp);
@@ -163,7 +185,7 @@ watchEffect(() => {
 });
 </script>
 <template>
-    <Head title="CRUD Page" />
+    <Head title="CRUD Page"/>
 
     <AuthenticatedLayout>
         <div class="py-12">
@@ -176,17 +198,22 @@ watchEffect(() => {
                         <div
                             class="md:px-3 md:py-4 flex flex-col md:flex-row gap-1.5 md:gap-1 md:justify-end"
                         >
-                            <button
+                            <primary-button
                                 @click="openModal"
-                                class="bg-blue-500 text-white px-4 py-2 rounded-xl"
                             >
                                 Add
-                            </button>
+                            </primary-button>
+                            <danger-button
+                                @click="confirmDeletePost"
+                            >
+                                delete
+                            </danger-button>
                         </div>
                         <AkuTable
                             :columns="columns"
                             ref="AkuTableRef"
                             :urls="'post/page'"
+                            :select-options="true"
                         >
                             <template #table-row="props">
                                 <span
@@ -203,16 +230,6 @@ watchEffect(() => {
                                             @click="editPost(props['row'])"
                                         >
                                             edit
-                                        </button>
-                                        <button
-                                            class="btn btn-error btn-sm"
-                                            @click="
-                                                confirmDeletePost(
-                                                    props['row'].id
-                                                )
-                                            "
-                                        >
-                                            delete
                                         </button>
                                     </div>
                                 </div>

@@ -12,10 +12,7 @@ class InventoryController extends Controller
 {
     public function index()
     {
-        $inv = Inventory::all();
-        return Inertia::render('Inventory', [
-            'inventory' => $inv
-        ]);
+        return Inertia::render('Inventory');
     }
     public function getTable(Request $request): JsonResponse {
 
@@ -25,7 +22,14 @@ class InventoryController extends Controller
             $field = $request->get('field') ?? 'created_at';
             $type = $request->get('type') ?? 'desc';
             $search_item = $request->get('type') ?? '';
-            $inv = Inventory::where('name', 'like', '%' . $search_item. '%');
+            $inv = Inventory::query()
+                ->where('name', 'like', '%' . $search_item. '%')
+                ->orWhere('qty','like', '%' . $search_item . '%')
+                ->orWhere('balance','like', '%' . $search_item . '%')
+                ->orWhere('remarks','like', '%' . $search_item . '%')
+                ->orWhere('color','like', '%' . $search_item . '%')
+                ->orWhere('size','like', '%' . $search_item . '%')
+                ->orWhere('description','like', '%' . $search_item . '%');
             $inv = $inv->orderBy($field, $type);
             return response()->json([
                 'status' => true,

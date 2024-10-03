@@ -12,20 +12,23 @@ class PostController extends Controller
 {
     public function index()
     {
-        $posts = Post::all();
-        return Inertia::render('Crud', [
-            'posts' => $posts
-        ]);
+        return Inertia::render('Crud');
     }
     public function getTable(Request $request): JsonResponse {
 
         try {
             $perPage = $request->get('perPage') ?? 10;
             $page = $request->get('page') ?? 1;
-            $field = $request->get('field') ?? 'created_at';
-            $type = $request->get('type') ?? 'desc';
-            $search_item = $request->get('type') ?? '';
-            $posts = Post::where('title', 'like', '%' . $search_item. '%');
+            $field = $request->get('sortField') ?? 'created_at';
+            $type = $request->get('sortType') ?? 'desc';
+            if($type === 'none'){
+                $field = 'created_at';
+                $type = 'desc';
+            }
+            $search_item = $request->get('searchQuery') ?? '';
+            $posts = Post::query()
+            ->where('title', 'like', '%' . $search_item. '%')
+            ->orWhere('description', 'like', '%' . $search_item. '%');
             $posts = $posts->orderBy($field, $type);
             return response()->json([
                 'status' => true,
