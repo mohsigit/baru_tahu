@@ -13,6 +13,13 @@ return new class extends Migration
     {
         Schema::create('inventories', function (Blueprint $table) {
             $table->id();
+            $table->string('name');
+            $table->bigInteger('qty')->nullable();
+            $table->bigInteger('balance')->nullable();
+            $table->string('remarks')->nullable();
+            $table->string('color')->nullable();
+            $table->string('size')->nullable();
+            $table->string('description')->nullable();
             $table->timestamps();
         });
     }

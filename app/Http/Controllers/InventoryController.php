@@ -43,7 +43,6 @@ class InventoryController extends Controller
         }
 
     }
-
     public function destroy($id): JsonResponse {
         try{
             $inv = Inventory::findOrFail($id);
@@ -63,31 +62,52 @@ class InventoryController extends Controller
             ]);
         }
     }
-    //Untuk Tambah
-    public function store(Request $request): JsonResponse {
-        try{
-            $request->validate([
-                'title' => 'required|string|max:255',
-                'description' => 'required|string',
-            ]);
-            $check = Inventory::query()->where('name', $request->get('id'));
-            $data = $request->get('name') !== null ? $check->first() : new Post();
-            $data->setAttribute('name', $request->get('name'));
-            $data->setAttribute('description',$request->get('description'));
-            $data->save();
-            return response()->json([
-                'status' => true,
-                'statusCode' => 200,
-                'message' => 'File saved successfully',
-                'data' => $data,
-            ]);
-        } catch(\Exception $e){
-            return response()->json([
-                'status' => false,
-                'statusCode' => 500,
-                'message' => $e->getMessage(),
-                'data' => null,
-            ]);
-        }
+    public function store(Request $request): JsonResponse
+{
+    try {
+        // Validate the request fields
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'qty' => 'required|integer',
+            'balance' => 'required|numeric',
+            'remarks' => 'nullable|string',
+            'color' => 'nullable|string|max:50',
+            'size' => 'nullable|string|max:50',
+            'description' => 'nullable|string',
+        ]);
+
+        // Check if we are updating or creating a new record
+        $check = Inventory::query()->where('id', $request->get('id'));
+        $data = $request->get('id') !== null ? $check->first() : new Inventory();
+
+        // Set attributes for the inventory item
+        $data->setAttribute('name', $request->get('name'));
+        $data->setAttribute('qty', $request->get('qty'));
+        $data->setAttribute('balance', $request->get('balance'));
+        $data->setAttribute('remarks', $request->get('remarks'));
+        $data->setAttribute('color', $request->get('color'));
+        $data->setAttribute('size', $request->get('size'));
+        $data->setAttribute('description', $request->get('description'));
+
+        // Save the inventory item
+        $data->save();
+
+        // Return success response
+        return response()->json([
+            'status' => true,
+            'statusCode' => 200,
+            'message' => 'Inventory item saved successfully',
+            'data' => $data,
+        ]);
+    } catch (\Exception $e) {
+        // Return error response in case of failure
+        return response()->json([
+            'status' => false,
+            'statusCode' => 500,
+            'message' => $e->getMessage(),
+            'data' => null,
+        ]);
     }
+}
+
 }

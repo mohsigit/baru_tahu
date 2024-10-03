@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\ItemController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
@@ -20,6 +21,10 @@ Route::get('/', function () {
 Route::get('/dashboard', function () {
     return Inertia::render('Dashboard');
 })->middleware(['auth', 'verified'])->name('dashboard');
+
+Route::get('/items', function () {
+    return Inertia::render('Items');
+})->middleware(['auth', 'verified'])->name('items');
 
 /*coba inventory
 Route::get('/inventory', function () {
@@ -67,7 +72,7 @@ Route::middleware(['auth'])->prefix('api')->group(function(){
     });
     Route::prefix('inventory')->group(function () {
         Route::get('/page', [InventoryController::class, 'getTable']);
-        Route::delete('/destroy/{name}', [InventoryController::class, 'destroy']);
+        Route::delete('/destroy/{id}', [InventoryController::class, 'destroy']);
         Route::post('/store', [InventoryController::class, 'store']);
     });
 });
