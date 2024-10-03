@@ -7,6 +7,7 @@ import { createApp, h } from "vue";
 import { ZiggyVue } from "../../vendor/tightenco/ziggy";
 import VueGoodTablePlugin from "vue-good-table-next";
 import "vue-good-table-next/dist/vue-good-table-next.css";
+import '@fortawesome/fontawesome-free/css/all.css';
 
 const appName = import.meta.env.VITE_APP_NAME || "Laravel";
 

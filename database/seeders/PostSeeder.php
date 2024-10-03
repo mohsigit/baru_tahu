@@ -3,10 +3,10 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
-use App\Models\Item; // Make sure to import your Item model
+use App\Models\Post; // Ensure this is the correct model for your posts
 use Faker\Factory as Faker;
 
-class ItemSeeder extends Seeder
+class PostSeeder extends Seeder
 {
     /**
      * Run the database seeds.
@@ -17,8 +17,8 @@ class ItemSeeder extends Seeder
 
         // Generate 50 item records
         foreach (range(1, 50) as $index) {
-            Item::create([
-                'title' => $faker->word,
+            Post::create([ // Use Post instead of post
+                'title' => $faker->sentence, // Changed from word to sentence for better titles
                 'description' => $faker->paragraph,
             ]);
         }

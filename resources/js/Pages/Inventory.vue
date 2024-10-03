@@ -7,6 +7,9 @@ import Modal from "@/Components/Modal.vue";
 import inventoryService from "@/Services/inventory.service";
 import AlertComponent from "@/Components/Alert.vue";
 import AkuTable from "@/Components/AkuTable.vue";
+import PrimaryButton
+    from "../../../vendor/laravel/breeze/stubs/inertia-vue-ts/resources/js/Components/PrimaryButton.vue";
+import DangerButton from "../../../vendor/laravel/breeze/stubs/inertia-vue-ts/resources/js/Components/DangerButton.vue";
 
 // Define the correct prop to receive the inventory data
 const props = defineProps({
@@ -95,25 +98,43 @@ const saveInventory = async () => {
         alertModel.value.alertType = "error";
     }
 };
-const confirmDeleteInventory = (id) => {
-    form.value.id = id;
+const arrDelete = ref([]);
+const confirmDeleteInventory = () => {
+    const getRows = AkuTableRef['value'].$refs.dataTableRemote.selectedRows
+    if (getRows.length === 0) {
+        alertModel.value.show = true
+        alertModel.value.title = "Error";
+        alertModel.value.message = 'Please select at least one item';
+        alertModel.value.alertType = "error";
+        return;
+    }
     showDeleteModal.value = true;
+    arrDelete.value = getRows
 };
+
 const deleteInventory = async () => {
     try {
-        const response = await inventoryService.destroy(form.value.id);
-        if (response.status) {
-            alertModel.value.show = true;
-            alertModel.value.title = "Success";
-            alertModel.value.message = response.message;
-            alertModel.value.alertType = "success";
-            loadItems();
+        let loopEnd = false
+        for (let i = 0; i < arrDelete.value.length; i++) {
+            const response = await inventoryService.destroy(arrDelete.value[i]['id']);
+            if (response.status) {
+                alertModel.value.show = true;
+                alertModel.value.title = "Success";
+                alertModel.value.message = response.message;
+                alertModel.value.alertType = "success";
+            } else {
+                alertModel.value.show = true;
+                alertModel.value.title = "Error";
+                alertModel.value.message = response.message;
+                alertModel.value.alertType = "error";
+            }
+            if(i+1 === arrDelete.value.length){
+                loopEnd = true
+            }
+        }
+        if(loopEnd){
+            await loadItems();
             closeDeleteModal();
-        } else {
-            alertModel.value.show = true;
-            alertModel.value.title = "Error";
-            alertModel.value.message = response.message;
-            alertModel.value.alertType = "error";
         }
     } catch (error) {
         alertModel.value.show = true;
@@ -164,11 +185,17 @@ watchEffect(() => {
                             >
                                 Add
                             </button>
+                            <danger-button
+                                @click="confirmDeleteInventory"
+                            >
+                                delete
+                            </danger-button>
                         </div>
                         <AkuTable
                             :columns="columns"
                             ref="AkuTableRef"
                             :urls="'inventory/page'"
+                            :select-options="true"
                         >
                         <template #table-row="props">
                                 <div v-if="props['column'].field === 'action'">
@@ -178,16 +205,6 @@ watchEffect(() => {
                                             @click="editInventory(props['row'])"
                                         >
                                             edit
-                                        </button>
-                                        <button
-                                            class="btn btn-error btn-sm"
-                                            @click="
-                                                confirmDeleteInventory(
-                                                    props['row'].id
-                                                )
-                                            "
-                                        >
-                                            delete
                                         </button>
                                     </div>
                                 </div>
