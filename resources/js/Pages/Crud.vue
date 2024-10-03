@@ -8,10 +8,6 @@ import postService from "@/Services/post.service";
 import AlertComponent from "@/Components/Alert.vue";
 import AkuTable from "@/Components/AkuTable.vue";
 
-// Buat Narik data dari controller
-const props = defineProps({
-    posts: Array,
-});
 
 // Untuk Modal
 const showModal = ref(false);

@@ -12,10 +12,7 @@ class InventoryController extends Controller
 {
     public function index()
     {
-        $inv = Inventory::all();
-        return Inertia::render('Inventory', [
-            'inventory' => $inv
-        ]);
+        return Inertia::render('Inventory');
     }
     public function getTable(Request $request): JsonResponse {
 

@@ -8,11 +8,6 @@ import inventoryService from "@/Services/inventory.service";
 import AlertComponent from "@/Components/Alert.vue";
 import AkuTable from "@/Components/AkuTable.vue";
 
-// Define the correct prop to receive the inventory data
-const props = defineProps({
-    inventory: Array, // Inventory, not posts
-});
-
 const columns = [
     { field: "name", label: "Name", sortable: true },
     { field: "qty", label: "Deskripsi", sortable: true },

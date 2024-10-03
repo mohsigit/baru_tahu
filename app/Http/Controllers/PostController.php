@@ -13,9 +13,7 @@ class PostController extends Controller
     public function index()
     {
         $posts = Post::all();
-        return Inertia::render('Crud', [
-            'posts' => $posts
-        ]);
+        return Inertia::render('Crud');
     }
     public function getTable(Request $request): JsonResponse {
 
